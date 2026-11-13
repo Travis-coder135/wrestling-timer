@@ -149,7 +149,6 @@
 
   <button class="primary" id="startNew">Start from bout 1</button>
   <button class="secondary" id="backToTimer" hidden>Back to timer</button>
-  <button class="secondary" id="testBuzz">Test buzzer</button>
 </section>
 
 <!-- TIMER SCREEN -->
@@ -199,7 +198,7 @@
 
   const KEY_SETTINGS = 'ironman.settings.v1';
   const KEY_RUN = 'ironman.run.v1';
-  const PRESETS = [30, 45, 60, 90, 120];
+  const PRESETS = [15, 30, 45, 60, 90, 120];
 
   // ---------- storage ----------
   function load(key) {
@@ -254,45 +253,11 @@
     return new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
 
-  // ---------- sound + vibration ----------
-  let ctx = null;
-  function audio() {
-    if (!ctx) {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (AC) ctx = new AC();
-    }
-    if (ctx && ctx.state === 'suspended') ctx.resume();
-    return ctx;
-  }
-  function tone(freqs, start, dur, vol) {
-    const c = audio();
-    if (!c) return;
-    const g = c.createGain();
-    g.gain.setValueAtTime(0.0001, start);
-    g.gain.exponentialRampToValueAtTime(vol, start + 0.02);
-    g.gain.setValueAtTime(vol, start + dur - 0.05);
-    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-    g.connect(c.destination);
-    freqs.forEach((f) => {
-      const o = c.createOscillator();
-      o.type = 'square';
-      o.frequency.value = f;
-      o.connect(g);
-      o.start(start);
-      o.stop(start + dur + 0.02);
-    });
-  }
-  function buzzer() {
-    const c = audio();
-    if (c) tone([220, 277], c.currentTime + 0.01, 1.4, 0.35);
-    if (navigator.vibrate) navigator.vibrate([500, 150, 500]);
+  // ---------- end-of-bout signal: screen flash only, no sound ----------
+  function flash() {
     document.body.classList.remove('flash');
     void document.body.offsetWidth;
     document.body.classList.add('flash');
-  }
-  function chirp() {
-    const c = audio();
-    if (c) tone([880], c.currentTime + 0.01, 0.12, 0.25);
   }
 
   // ---------- keep screen awake ----------
@@ -336,13 +301,11 @@
         timeOfDay(endedAt) + ' while the app was closed.';
       saveRun();
     } else {
-      buzzer();
+      flash();
     }
   }
 
   function start() {
-    audio(); // unlock sound on this tap
-    chirp();
     run.notice = null;
     if (run.phase === 'paused') {
       run.endAt = Date.now() + run.remaining;
@@ -482,7 +445,6 @@
       return;
     }
     if (run && run.phase === 'running' && !confirm('A bout is running. Restart from bout 1?')) return;
-    audio();
     newRun();
     showTimer();
   });
@@ -491,7 +453,6 @@
     if (run.phase === 'ready') { run.remaining = fullMs(); saveRun(); }
     showTimer();
   });
-  $('testBuzz').addEventListener('click', buzzer);
 
   // ---------- timer screen ----------
   function render() {

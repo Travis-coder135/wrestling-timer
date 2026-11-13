@@ -1,5 +1,5 @@
 // Network first so updates show up; falls back to the cache when offline.
-const CACHE = 'ironman-v1';
+const CACHE = 'ironman-v2';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
