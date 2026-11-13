@@ -66,6 +66,9 @@
   .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
   .row button { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; min-height: 56px; font-weight: 700; font-size: 1.05rem; }
   .next { margin-top: 16px; color: var(--muted); text-align: center; font-size: 1.05rem; }
+  #prevBout + #next { margin-top: 6px; }
+  .total { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 1.05rem; color: var(--muted); }
+  .total b { color: var(--text); font-size: 1.3rem; }
   .next b { color: var(--text); }
   .notice { margin-top: 12px; background: #2a2210; border: 1px solid #5c4a17; color: #ffd98a; border-radius: 12px; padding: 10px 14px; font-size: 0.95rem; }
   .done { text-align: center; padding: 48px 0 16px; }
@@ -124,6 +127,7 @@
       <small>min : sec</small>
     </div>
     <div class="chips" id="presets"></div>
+    <div class="total" id="total"></div>
   </div>
 
   <div class="card">
@@ -175,6 +179,7 @@
       <button id="reset">Reset</button>
       <button id="skip">Skip &#9654;</button>
     </div>
+    <div class="next" id="prevBout"></div>
     <div class="next" id="next"></div>
   </div>
 
@@ -376,6 +381,25 @@
       b.addEventListener('click', () => { settings.seconds = s; saveSettings(); renderTimeInputs(); renderPresets(); });
       presets.appendChild(b);
     });
+    renderTotal();
+  }
+  function longTime(totalSec) {
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const parts = [];
+    if (h) parts.push(h + ' hr');
+    if (m) parts.push(m + ' min');
+    if (s || !parts.length) parts.push(s + ' sec');
+    return parts.join(' ');
+  }
+  function renderTotal() {
+    const count = settings.wrestlers * (settings.wrestlers - 1);
+    const total = $('total');
+    total.textContent = 'Total: ';
+    const b = document.createElement('b');
+    b.textContent = longTime(count * settings.seconds);
+    total.append(b, ' (' + count + ' bouts × ' + fmt(settings.seconds * 1000) + ', not counting breaks between bouts)');
   }
   function renderRest() {
     $('wMinus').disabled = settings.wrestlers <= 2;
@@ -493,6 +517,18 @@
       $('prev').disabled = locked || run.index === 0;
       $('reset').disabled = locked || (run.phase === 'ready' && run.remaining === fullMs());
       $('skip').disabled = locked;
+
+      const p = list[run.index - 1];
+      const prevBout = $('prevBout');
+      prevBout.textContent = '';
+      if (p) {
+        prevBout.append('Just did: ');
+        const pb = document.createElement('b');
+        pb.textContent = p.a + ' vs ' + p.b;
+        prevBout.append(pb, ' · ' + sitLine(p.sit));
+      } else {
+        prevBout.textContent = 'First bout';
+      }
 
       const n = list[run.index + 1];
       const next = $('next');
